@@ -1,0 +1,15 @@
+{
+  "service": {
+    "host": "0.0.0.0",
+    "port": 82,
+    "workers": 1
+  },
+  "ipfsApi": "/ip4/172.16.0.97/tcp/5001",
+  "localStorage": "/tmp/",
+  "project": "apk",
+  "ipfsApkPath": "apk",
+  "redisCacheServer": [
+    {"host": "172.16.0.60", "port": 6379}
+  ],
+  "uiTemplate": "QmR9BkfCMD2k4z4BW7Yq2SW7sJBUcdLVRHCdLPu7rjiLhA"
+}
