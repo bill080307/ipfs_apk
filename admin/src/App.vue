@@ -39,7 +39,7 @@
           <b-button-group>
             <b-button variant="success" @click="newversion">new</b-button>
             <b-button variant="info">update</b-button>
-            <b-button variant="warning">delete</b-button>
+            <b-button variant="warning" @click="delversion">delete</b-button>
           </b-button-group>
         </b-col>
       </b-row>
@@ -122,7 +122,15 @@
           this.selectkey();
           console.log(res)
         })
-      }
+      },
+      delversion(){
+        Axios.get('/api/delversion?ipns='+this.keyselected+'&bulid='+this.item.bulid).then((res)=>{
+          this.item = {};
+          this.apkfile = null;
+          this.selectkey();
+          console.log(res)
+        })
+      },
     },
     filters:{
       dateT(timestamp){
