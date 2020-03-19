@@ -45,7 +45,7 @@
           <p>datetime: {{ item.datetime | dateT}}</p>
           <b-button-group>
             <b-button variant="success" @click="newversion">new</b-button>
-            <b-button variant="info">update</b-button>
+            <b-button variant="info" @click="upversion">update</b-button>
             <b-button variant="warning" @click="delversion">delete</b-button>
           </b-button-group>
         </b-col>
@@ -152,6 +152,26 @@
           this.item = {};
           this.apkfile = null;
           this.selectkey();
+          console.log(res)
+        })
+      },
+      upversion(){
+        const formdata = new FormData();
+        if (this.apkfile){
+          formdata.append('apk',this.apkfile);
+        }
+        formdata.append('ipns',this.keyselected);
+        formdata.append('title',this.item.title);
+        formdata.append('version',this.item.version);
+        formdata.append('bulid',this.item.bulid);
+        formdata.append('log',this.item.log);
+        Axios.post('/api/upversion',formdata,{
+          headers:{'Content-Type':'multipart/form-data'}
+        }).then((res)=>{
+          this.item = {};
+          this.apkfile = null;
+          this.selectkey();
+          this.updateed = "";
           console.log(res)
         })
       },
