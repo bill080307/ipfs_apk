@@ -166,6 +166,67 @@ def delVersion(ipns, bulid):
     return {"newhash": hash['Hash']}
 
 
+@app.post('/upversion')
+def upVersion(ipns: str = Form(...),
+                     title: str = Form(...),
+                     version:str = Form(...),
+                     bulid:str = Form(...),
+                     log:str = Form(...),
+                     apk: UploadFile = File(None)):
+    red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
+                      port=conf['redisCacheServer'][0]["port"],
+                      decode_responses=True)
+    ipfs = red.get(ipns)
+    if ipfs is None:
+        return 'no Version.'
+
+    files = api.object.links(ipfs)
+    dirhash = api.object.new("unixfs-dir")
+    for fl in files['Links']:
+        if fl['Name'] == conf['StorageSubPath']:
+            dirhash = fl
+
+    if apk:
+        apkname = "%s_%s_%s.apk" % (conf['projectName'].lower(), version, bulid)
+        apkpath = os.path.join(conf['localStorage'], conf['StorageSubPath'])
+        if not os.path.isdir(apkpath):
+            os.mkdir(apkpath)
+        with open(os.path.join(apkpath, apkname), "wb") as f:
+            f.write(apk.file.read())
+        apkhash = api.add(os.path.join(apkpath, apkname))
+    update = getupdatejson(ipfs)
+    newupdate = {
+        "title": conf['projectName'],
+        "data": [],
+    }
+    for item in update['data']:
+        if not item['bulid'] == bulid:
+            newupdate['data'].append(item)
+        else:
+            if apk:
+                apk_file = os.path.join(conf['StorageSubPath'], apkname)
+                dirhash = api.object.patch.rm_link(dirhash['Hash'], item['apk_file'].split('/')[1])
+                dirhash = api.object.patch.add_link(dirhash['Hash'], apkname, apkhash['Hash'])
+            else:
+                apk_file = item['apk_file']
+            newupdate['data'].append({
+                "title": title,
+                "version": version,
+                "bulid": bulid,
+                "log": log,
+                "apk_file": apk_file,
+                "datetime": int(time.time())
+            })
+    update['last'] = bulid
+    updatehash = api.add_json(newupdate)
+
+    hash = conf['uiTemplate']
+    hash = api.object.patch.add_link(hash, conf['StorageSubPath'], dirhash['Hash'])
+    hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
+    red.set(ipns, hash['Hash'])
+    return {"newhash": hash['Hash']}
+
+
 if __name__ == '__main__':
     import uvicorn
     runConf = conf['service']
