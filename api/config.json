@@ -1,4 +1,5 @@
 {
+  "projectName": "VideoShare",
   "service": {
     "host": "0.0.0.0",
     "port": 82,
@@ -6,8 +7,7 @@
   },
   "ipfsApi": "/ip4/172.16.0.97/tcp/5001",
   "localStorage": "/tmp/",
-  "project": "apk",
-  "ipfsApkPath": "apk",
+  "StorageSubPath": "apk",
   "redisCacheServer": [
     {"host": "172.16.0.60", "port": 6379}
   ],
