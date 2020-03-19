@@ -2,7 +2,10 @@
   <div id="app">
     <b-container>
       <b-row>
-        <b-col>ipfs API: {{ipfsApi}}</b-col>
+        <b-col>
+          ipfs API: {{ipfsApi}}<br>
+          ipfs GW: {{ipfsGW}}
+        </b-col>
         <b-col>key:
           <b-button variant="info" @click="init">refresh</b-button>
           <b-button variant="success" @click="newkey">new</b-button>
@@ -12,6 +15,10 @@
       <b-row>
         <b-col cols="3">
           <b-form-select v-model="updateed" :options="updates" :select-size="10" @change="selectver"></b-form-select>
+          IPNS QR (ipns gateway)<br>
+          <div id="ipnsqrCode" ref="ipnsqrCodeDiv"></div>
+          IPFS QR (ipfs path)<br>
+          <div id="ipfsqrCode" ref="ipfsqrCodeDiv"></div>
         </b-col>
         <b-col cols="9">
           <b-form-group label="title:" label-for="title">
@@ -34,7 +41,7 @@
           <b-form-group label="apkfile:" label-for="apkfile">
             <b-form-file id="apkfile" v-model="apkfile" accept=".apk"></b-form-file>
           </b-form-group>
-          <p>download: {{item.apk_file}}</p>
+          <p>download: <a :href="item.apk_url">{{item.apk_file}}</a></p>
           <p>datetime: {{ item.datetime | dateT}}</p>
           <b-button-group>
             <b-button variant="success" @click="newversion">new</b-button>
@@ -48,12 +55,14 @@
 </template>
 
 <script>
-  import Axios from 'axios'
+  import Axios from 'axios';
+  import QRCode from 'qrcodejs2';
   export default {
     name: 'App',
     data(){
       return {
         ipfsApi:"",
+        ipfsGW:"",
         keys:[],
         keyselected:"",
         item:{
@@ -61,6 +70,7 @@
           "version": "",
           "bulid": "",
           "apk_file": "",
+          "apk_url": "",
           "log": "",
           "datetime": "",
         },
@@ -74,6 +84,7 @@
       init(){
         Axios.get('/api/getkeys').then((res)=>{
           this.ipfsApi = res.data.api;
+          this.ipfsGW = res.data.gw;
           this.keys = [];
           for (let i = 0; i < res.data.keys.length; i++) {
             this.keys.push({
@@ -101,10 +112,31 @@
               text: this.updatejson[i].title
             })
           }
+          this.$refs.ipnsqrCodeDiv.innerHTML = '';
+          this.$refs.ipfsqrCodeDiv.innerHTML = '';
+          if(this.updatejson.length > 0){
+            new QRCode(this.$refs.ipnsqrCodeDiv, {
+              text: this.ipfsGW.replace(/ipfs\/:hash/,'ipns/'+this.keyselected+'/'),
+              width: 200,
+              height: 200,
+              colorDark: "#333333",
+              colorLight: "#ffffff",
+              correctLevel: QRCode.CorrectLevel.L//容错率，L/M/H
+            });
+            new QRCode(this.$refs.ipfsqrCodeDiv, {
+              text: '/ipfs/'+res.data.ipfs,
+              width: 200,
+              height: 200,
+              colorDark: "#333333",
+              colorLight: "#ffffff",
+              correctLevel: QRCode.CorrectLevel.L//容错率，L/M/H
+            });
+          }
         })
       },
       selectver(){
         this.item = this.updatejson[this.updateed];
+        this.item.apk_url = this.ipfsGW.replace(/ipfs\/:hash/,'ipns/'+this.keyselected) + '/' +this.item.apk_file;
       },
       newversion(){
         const formdata = new FormData();

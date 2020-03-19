@@ -35,7 +35,7 @@ def getKeys():
     for k in keys['Keys']:
         if k['Name'].startswith(conf['StorageSubPath'] + '_'):
             result.append(k)
-    return {"api": conf['ipfsApi'], "keys": result}
+    return {"api": conf['ipfsApi'], "gw": conf['ipfsGW'], "keys": result}
 
 
 @app.get('/newkey')
@@ -63,11 +63,13 @@ def getUpdate(ipns: str):
         }
         return update
     else:
-        return getupdatejson(ipfs)
+        result = getupdatejson(ipfs)
+        result['ipfs'] = ipfs
+        return result
 
 
 @app.post('/newversion')
-async def newVersion(ipns: str = Form(...),
+def newVersion(ipns: str = Form(...),
                      title: str = Form(...),
                      version:str = Form(...),
                      bulid:str = Form(...),
@@ -112,6 +114,50 @@ async def newVersion(ipns: str = Form(...),
 
     # add apk file in hash
     dirhash = api.object.patch.add_link(dirhash['Hash'], apkname, apkhash['Hash'])
+
+    hash = conf['uiTemplate']
+    hash = api.object.patch.add_link(hash, conf['StorageSubPath'], dirhash['Hash'])
+    hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
+    red.set(ipns, hash['Hash'])
+    return {"newhash": hash['Hash']}
+
+
+@app.get('/delversion')
+def delVersion(ipns, bulid):
+    red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
+                      port=conf['redisCacheServer'][0]["port"],
+                      decode_responses=True)
+    ipfs = red.get(ipns)
+    if ipfs is None:
+        return 'no Version.'
+    update = getupdatejson(ipfs)
+    newupdate = {
+        "title": conf['projectName'],
+        "data": [],
+    }
+    for item in update['data']:
+        if not item['bulid'] == bulid:
+            newupdate['data'].append(item)
+        else:
+            apkname = "%s_%s_%s.apk" % (conf['projectName'].lower(), item['version'], bulid)
+
+    if update['last'] == bulid:
+        last = 0
+        for i in range(len(newupdate['data'])):
+            if newupdate['data'][i]['datetime'] > newupdate['data'][last]['datetime']:
+                last = i
+        newupdate['last'] = newupdate['data'][last]['bulid']
+
+    updatehash = api.add_json(newupdate)
+    files = api.object.links(ipfs)
+
+    dirhash = api.object.new("unixfs-dir")
+    for fl in files['Links']:
+        if fl['Name'] == conf['StorageSubPath']:
+            dirhash = fl
+
+    # del apk file in hash
+    dirhash = api.object.patch.rm_link(dirhash['Hash'], apkname)
 
     hash = conf['uiTemplate']
     hash = api.object.patch.add_link(hash, conf['StorageSubPath'], dirhash['Hash'])
