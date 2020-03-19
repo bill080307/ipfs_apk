@@ -6,6 +6,7 @@
     "workers": 1
   },
   "ipfsApi": "/ip4/172.16.0.97/tcp/5001",
+  "ipfsGW": "http://172.16.0.60:8082/ipfs/:hash",
   "localStorage": "/tmp/",
   "StorageSubPath": "apk",
   "redisCacheServer": [
