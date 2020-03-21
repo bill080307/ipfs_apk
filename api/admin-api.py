@@ -15,7 +15,7 @@ def loadjson(jsonfile):
 
 
 app = FastAPI()
-conf = loadjson("config.json")
+conf = loadjson(os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json"))
 api = ipfshttpclient.connect(conf['ipfsApi'], timeout=3600)
 
 

@@ -1,0 +1,9 @@
+[Unit]
+Description=ipfsapkapi
+[Service]
+ExecStart=PYTHON3_SCRIPT
+Restart=always
+User=root
+Group=root
+[Install]
+WantedBy=multi-user.target

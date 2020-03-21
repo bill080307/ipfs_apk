@@ -1,0 +1,5 @@
+ipfshttpclient
+redis
+fastapi
+uvicorn
+python-multipart

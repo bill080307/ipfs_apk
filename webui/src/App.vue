@@ -39,7 +39,7 @@ export default {
   },
   methods:{
     init(){
-      Axios.get('/update.json').then((res)=>{
+      Axios.get('./update.json').then((res)=>{
         this.title = res.data.title;
         this.updatejson = res.data.data;
         for (let i = this.updatejson.length - 1; i >=0 ; i--) {
