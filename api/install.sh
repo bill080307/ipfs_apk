@@ -53,9 +53,9 @@ function api() {
 apt install -y nginx
 if [ -z $1 ]
 then
-#	ui
-#	admin
-#	api
+	ui
+	admin
+	api
 echo all
 fi
 if [ "$1" == "ui" ]
