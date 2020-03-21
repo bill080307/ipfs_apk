@@ -2,7 +2,7 @@
   "projectName": "VideoShare",
   "service": {
     "host": "127.0.0.1",
-    "port": 82,
+    "port": 5050,
     "workers": 1
   },
   "ipfsApi": "/ip4/127.0.0.1/tcp/5001",
