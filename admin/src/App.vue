@@ -15,6 +15,7 @@
       <b-row>
         <b-col cols="3">
           <b-form-select v-model="updateed" :options="updates" :select-size="10" @change="selectver"></b-form-select>
+          IPNS: {{ keyselected }}<br>
           IPNS QR (ipns gateway)<br>
           <div id="ipnsqrCode" ref="ipnsqrCodeDiv"></div>
           IPFS QR (ipfs path)<br>
@@ -121,7 +122,7 @@
               height: 200,
               colorDark: "#333333",
               colorLight: "#ffffff",
-              correctLevel: QRCode.CorrectLevel.L//容错率，L/M/H
+              correctLevel: QRCode.CorrectLevel.L
             });
             new QRCode(this.$refs.ipfsqrCodeDiv, {
               text: '/ipfs/'+res.data.ipfs,
@@ -129,7 +130,7 @@
               height: 200,
               colorDark: "#333333",
               colorLight: "#ffffff",
-              correctLevel: QRCode.CorrectLevel.L//容错率，L/M/H
+              correctLevel: QRCode.CorrectLevel.L
             });
           }
         })
