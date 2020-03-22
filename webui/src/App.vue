@@ -56,7 +56,7 @@ export default {
         this.selectver();
         this.$refs.apkqrCodeDiv.innerHTML = '';
         new QRCode(this.$refs.apkqrCodeDiv, {
-          text: '123',
+          text: window.location.href,
           width: 120,
           height: 120,
           colorDark: "#333333",
