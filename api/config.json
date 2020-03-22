@@ -8,7 +8,7 @@
   "ipfsApi": "/ip4/127.0.0.1/tcp/5001",
   "ipfsGW": "http://127.0.0.1:8080/ipfs/:hash",
   "localStorage": "/data/",
-  "StorageSubPath": "apk",
+  "storageSubPath": "apk",
   "redisCacheServer": [
     {"host": "127.0.0.1", "port": 6379}
   ],

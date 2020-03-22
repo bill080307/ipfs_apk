@@ -33,7 +33,7 @@ def getKeys():
     keys = api.key.list()
     result = []
     for k in keys['Keys']:
-        if k['Name'].startswith(conf['StorageSubPath'] + '_'):
+        if k['Name'].startswith(conf['storageSubPath'] + '_'):
             result.append(k)
     return {"api": conf['ipfsApi'], "gw": conf['ipfsGW'], "keys": result}
 
@@ -44,9 +44,9 @@ def newKey(keyname: str):
         return 'keyname not allow'
     keys = api.key.list()
     for k in keys['Keys']:
-        if k['Name'] == conf['StorageSubPath'] + '_' + keyname:
+        if k['Name'] == conf['storageSubPath'] + '_' + keyname:
             return 'keyname Already.'
-    key = api.key.gen(conf['StorageSubPath'] + '_' + keyname, type="rsa")
+    key = api.key.gen(conf['storageSubPath'] + '_' + keyname, type="rsa")
     return key
 
 
@@ -76,7 +76,7 @@ def newVersion(ipns: str = Form(...),
                      log:str = Form(...),
                      apk: UploadFile = File(...)):
     apkname = "%s_%s_%s.apk" % (conf['projectName'].lower(), version, bulid)
-    apkpath = os.path.join(conf['localStorage'], conf['StorageSubPath'])
+    apkpath = os.path.join(conf['localStorage'], conf['storageSubPath'])
     if not os.path.isdir(apkpath):
         os.mkdir(apkpath)
     with open(os.path.join(apkpath, apkname), "wb") as f:
@@ -99,7 +99,7 @@ def newVersion(ipns: str = Form(...),
         "version": version,
         "bulid": bulid,
         "log": log,
-        "apk_file": os.path.join(conf['StorageSubPath'], apkname),
+        "apk_file": os.path.join(conf['storageSubPath'], apkname),
         "datetime": int(time.time())
     })
     update['last'] = bulid
@@ -109,14 +109,14 @@ def newVersion(ipns: str = Form(...),
 
     dirhash = api.object.new("unixfs-dir")
     for fl in files['Links']:
-        if fl['Name'] == conf['StorageSubPath']:
+        if fl['Name'] == conf['storageSubPath']:
             dirhash = fl
 
     # add apk file in hash
     dirhash = api.object.patch.add_link(dirhash['Hash'], apkname, apkhash['Hash'])
 
     hash = conf['uiTemplate']
-    hash = api.object.patch.add_link(hash, conf['StorageSubPath'], dirhash['Hash'])
+    hash = api.object.patch.add_link(hash, conf['storageSubPath'], dirhash['Hash'])
     hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
     red.set(ipns, hash['Hash'])
     return {"newhash": hash['Hash']}
@@ -153,14 +153,14 @@ def delVersion(ipns, bulid):
 
     dirhash = api.object.new("unixfs-dir")
     for fl in files['Links']:
-        if fl['Name'] == conf['StorageSubPath']:
+        if fl['Name'] == conf['storageSubPath']:
             dirhash = fl
 
     # del apk file in hash
     dirhash = api.object.patch.rm_link(dirhash['Hash'], apkname)
 
     hash = conf['uiTemplate']
-    hash = api.object.patch.add_link(hash, conf['StorageSubPath'], dirhash['Hash'])
+    hash = api.object.patch.add_link(hash, conf['storageSubPath'], dirhash['Hash'])
     hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
     red.set(ipns, hash['Hash'])
     return {"newhash": hash['Hash']}
@@ -183,12 +183,12 @@ def upVersion(ipns: str = Form(...),
     files = api.object.links(ipfs)
     dirhash = api.object.new("unixfs-dir")
     for fl in files['Links']:
-        if fl['Name'] == conf['StorageSubPath']:
+        if fl['Name'] == conf['storageSubPath']:
             dirhash = fl
 
     if apk:
         apkname = "%s_%s_%s.apk" % (conf['projectName'].lower(), version, bulid)
-        apkpath = os.path.join(conf['localStorage'], conf['StorageSubPath'])
+        apkpath = os.path.join(conf['localStorage'], conf['storageSubPath'])
         if not os.path.isdir(apkpath):
             os.mkdir(apkpath)
         with open(os.path.join(apkpath, apkname), "wb") as f:
@@ -204,7 +204,7 @@ def upVersion(ipns: str = Form(...),
             newupdate['data'].append(item)
         else:
             if apk:
-                apk_file = os.path.join(conf['StorageSubPath'], apkname)
+                apk_file = os.path.join(conf['storageSubPath'], apkname)
                 dirhash = api.object.patch.rm_link(dirhash['Hash'], item['apk_file'].split('/')[1])
                 dirhash = api.object.patch.add_link(dirhash['Hash'], apkname, apkhash['Hash'])
             else:
@@ -221,7 +221,7 @@ def upVersion(ipns: str = Form(...),
     updatehash = api.add_json(newupdate)
 
     hash = conf['uiTemplate']
-    hash = api.object.patch.add_link(hash, conf['StorageSubPath'], dirhash['Hash'])
+    hash = api.object.patch.add_link(hash, conf['storageSubPath'], dirhash['Hash'])
     hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
     red.set(ipns, hash['Hash'])
     return {"newhash": hash['Hash']}
