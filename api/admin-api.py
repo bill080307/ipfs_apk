@@ -217,7 +217,7 @@ def upVersion(ipns: str = Form(...),
                 "apk_file": apk_file,
                 "datetime": int(time.time())
             })
-    update['last'] = bulid
+    newupdate['last'] = bulid
     updatehash = api.add_json(newupdate)
 
     hash = conf['uiTemplate']
