@@ -72,10 +72,10 @@ def getUpdate(ipns: str):
 def newVersion(ipns: str = Form(...),
                      title: str = Form(...),
                      version:str = Form(...),
-                     bulid:str = Form(...),
+                     build:str = Form(...),
                      log:str = Form(...),
                      apk: UploadFile = File(...)):
-    apkname = "%s_%s_%s.apk" % (conf['projectName'].lower(), version, bulid)
+    apkname = "%s_%s_%s.apk" % (conf['projectName'].lower(), version, build)
     apkpath = os.path.join(conf['localStorage'], conf['storageSubPath'])
     if not os.path.isdir(apkpath):
         os.mkdir(apkpath)
@@ -97,12 +97,12 @@ def newVersion(ipns: str = Form(...),
     update['data'].append({
         "title": title,
         "version": version,
-        "bulid": bulid,
+        "build": build,
         "log": log,
         "apk_file": os.path.join(conf['storageSubPath'], apkname),
         "datetime": int(time.time())
     })
-    update['last'] = bulid
+    update['last'] = build
     updatehash = api.add_json(update)
 
     files = api.object.links(ipfs)
@@ -123,7 +123,7 @@ def newVersion(ipns: str = Form(...),
 
 
 @app.get('/delversion')
-def delVersion(ipns, bulid):
+def delVersion(ipns, build):
     red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
                       port=conf['redisCacheServer'][0]["port"],
                       decode_responses=True)
@@ -136,17 +136,17 @@ def delVersion(ipns, bulid):
         "data": [],
     }
     for item in update['data']:
-        if not item['bulid'] == bulid:
+        if not item['build'] == build:
             newupdate['data'].append(item)
         else:
-            apkname = "%s_%s_%s.apk" % (conf['projectName'].lower(), item['version'], bulid)
+            apkname = "%s_%s_%s.apk" % (conf['projectName'].lower(), item['version'], build)
 
-    if update['last'] == bulid:
+    if update['last'] == build:
         last = 0
         for i in range(len(newupdate['data'])):
             if newupdate['data'][i]['datetime'] > newupdate['data'][last]['datetime']:
                 last = i
-        newupdate['last'] = newupdate['data'][last]['bulid']
+        newupdate['last'] = newupdate['data'][last]['build']
 
     updatehash = api.add_json(newupdate)
     files = api.object.links(ipfs)
@@ -170,7 +170,7 @@ def delVersion(ipns, bulid):
 def upVersion(ipns: str = Form(...),
                      title: str = Form(...),
                      version:str = Form(...),
-                     bulid:str = Form(...),
+                     build:str = Form(...),
                      log:str = Form(...),
                      apk: UploadFile = File(None)):
     red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
@@ -187,7 +187,7 @@ def upVersion(ipns: str = Form(...),
             dirhash = fl
 
     if apk:
-        apkname = "%s_%s_%s.apk" % (conf['projectName'].lower(), version, bulid)
+        apkname = "%s_%s_%s.apk" % (conf['projectName'].lower(), version, build)
         apkpath = os.path.join(conf['localStorage'], conf['storageSubPath'])
         if not os.path.isdir(apkpath):
             os.mkdir(apkpath)
@@ -200,7 +200,7 @@ def upVersion(ipns: str = Form(...),
         "data": [],
     }
     for item in update['data']:
-        if not item['bulid'] == bulid:
+        if not item['build'] == build:
             newupdate['data'].append(item)
         else:
             if apk:
@@ -212,12 +212,12 @@ def upVersion(ipns: str = Form(...),
             newupdate['data'].append({
                 "title": title,
                 "version": version,
-                "bulid": bulid,
+                "build": build,
                 "log": log,
                 "apk_file": apk_file,
                 "datetime": int(time.time())
             })
-    newupdate['last'] = bulid
+    newupdate['last'] = build
     updatehash = api.add_json(newupdate)
 
     hash = conf['uiTemplate']

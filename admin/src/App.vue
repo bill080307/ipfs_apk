@@ -28,8 +28,8 @@
           <b-form-group label="version:" label-for="version">
             <b-form-input id="version" v-model="item.version"></b-form-input>
           </b-form-group>
-          <b-form-group label="bulid:" label-for="bulid">
-            <b-form-input id="bulid" v-model="item.bulid"></b-form-input>
+          <b-form-group label="build:" label-for="build">
+            <b-form-input id="build" v-model="item.build"></b-form-input>
           </b-form-group>
           <b-form-group label="update_log:" label-for="update_log">
             <b-form-textarea
@@ -69,7 +69,7 @@
         item:{
           "title": "",
           "version": "",
-          "bulid": "",
+          "build": "",
           "apk_file": "",
           "apk_url": "",
           "log": "",
@@ -145,7 +145,7 @@
         formdata.append('ipns',this.keyselected);
         formdata.append('title',this.item.title);
         formdata.append('version',this.item.version);
-        formdata.append('bulid',this.item.bulid);
+        formdata.append('build',this.item.build);
         formdata.append('log',this.item.log);
         Axios.post('/api/newversion',formdata,{
           headers:{'Content-Type':'multipart/form-data'}
@@ -164,7 +164,7 @@
         formdata.append('ipns',this.keyselected);
         formdata.append('title',this.item.title);
         formdata.append('version',this.item.version);
-        formdata.append('bulid',this.item.bulid);
+        formdata.append('build',this.item.build);
         formdata.append('log',this.item.log);
         Axios.post('/api/upversion',formdata,{
           headers:{'Content-Type':'multipart/form-data'}
@@ -177,7 +177,7 @@
         })
       },
       delversion(){
-        Axios.get('/api/delversion?ipns='+this.keyselected+'&bulid='+this.item.bulid).then((res)=>{
+        Axios.get('/api/delversion?ipns='+this.keyselected+'&build='+this.item.build).then((res)=>{
           this.item = {};
           this.apkfile = null;
           this.selectkey();

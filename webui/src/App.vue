@@ -30,7 +30,7 @@ export default {
       item:{
         "title": "",
         "version": "",
-        "bulid": "",
+        "build": "",
         "apk_file": "",
         "log": "",
         "datetime": "",
