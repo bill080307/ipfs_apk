@@ -147,6 +147,8 @@ def delVersion(ipns, build):
             if newupdate['data'][i]['datetime'] > newupdate['data'][last]['datetime']:
                 last = i
         newupdate['last'] = newupdate['data'][last]['build']
+    else:
+        newupdate['last'] = update['last']
 
     updatehash = api.add_json(newupdate)
     files = api.object.links(ipfs)
