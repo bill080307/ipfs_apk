@@ -28,6 +28,22 @@ def getupdatejson(hash):
         if fl['Name'] == 'update.json':
             return json.loads(api.cat(fl['Hash']))
 
+
+def publish(ipns, ipfs):
+    from threading import Thread
+
+    def setipns(ipns, ipfs):
+        api.name.publish('/ipfs/%s' % ipfs, key=ipns, lifetime='8760h')
+
+    redcfs = conf['redisCacheServer']
+    for redcf in redcfs:
+        red = redis.Redis(host=redcf["host"], port=redcf["port"], decode_responses=True)
+        red.set(ipns, ipfs)
+    t = Thread(target=setipns, args=(ipns, ipfs))
+    t.start()
+    return
+
+
 @app.get('/getkeys')
 def getKeys():
     keys = api.key.list()
@@ -118,7 +134,7 @@ def newVersion(ipns: str = Form(...),
     hash = conf['uiTemplate']
     hash = api.object.patch.add_link(hash, conf['storageSubPath'], dirhash['Hash'])
     hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
-    red.set(ipns, hash['Hash'])
+    publish(ipns, hash['Hash'])
     return {"newhash": hash['Hash']}
 
 
@@ -164,7 +180,7 @@ def delVersion(ipns, build):
     hash = conf['uiTemplate']
     hash = api.object.patch.add_link(hash, conf['storageSubPath'], dirhash['Hash'])
     hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
-    red.set(ipns, hash['Hash'])
+    publish(ipns, hash['Hash'])
     return {"newhash": hash['Hash']}
 
 
@@ -225,7 +241,7 @@ def upVersion(ipns: str = Form(...),
     hash = conf['uiTemplate']
     hash = api.object.patch.add_link(hash, conf['storageSubPath'], dirhash['Hash'])
     hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
-    red.set(ipns, hash['Hash'])
+    publish(ipns, hash['Hash'])
     return {"newhash": hash['Hash']}
 
 
