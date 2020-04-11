@@ -80,6 +80,11 @@ export default {
   },
   created(){
     this.init();
+  },
+  watch: {
+    title() {
+      document.title = this.title !=="" ? this.title : "VideoShare";
+    }
   }
 }
 </script>
