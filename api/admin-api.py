@@ -38,7 +38,7 @@ def publish(ipns, ipfs):
     redcfs = conf['redisCacheServer']
     for redcf in redcfs:
         red = redis.Redis(host=redcf["host"], port=redcf["port"], decode_responses=True)
-        red.set(ipns, ipfs)
+        red.set("IPNSCACHE_%s" % ipns, ipfs)
     t = Thread(target=setipns, args=(ipns, ipfs))
     t.start()
     return
@@ -71,7 +71,7 @@ def getUpdate(ipns: str):
     red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
                       port=conf['redisCacheServer'][0]["port"],
                       decode_responses=True)
-    ipfs = red.get(ipns)
+    ipfs = red.get("IPNSCACHE_%s" % ipns)
     if ipfs is None:
         update = {
             "title": conf['projectName'],
@@ -101,7 +101,7 @@ def newVersion(ipns: str = Form(...),
     red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
                       port=conf['redisCacheServer'][0]["port"],
                       decode_responses=True)
-    ipfs = red.get(ipns)
+    ipfs = red.get("IPNSCACHE_%s" % ipns)
     if ipfs is None:
         update = {
             "title": conf['projectName'],
@@ -143,7 +143,7 @@ def delVersion(ipns, build):
     red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
                       port=conf['redisCacheServer'][0]["port"],
                       decode_responses=True)
-    ipfs = red.get(ipns)
+    ipfs = red.get("IPNSCACHE_%s" % ipns)
     if ipfs is None:
         return 'no Version.'
     update = getupdatejson(ipfs)
@@ -194,7 +194,7 @@ def upVersion(ipns: str = Form(...),
     red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
                       port=conf['redisCacheServer'][0]["port"],
                       decode_responses=True)
-    ipfs = red.get(ipns)
+    ipfs = red.get("IPNSCACHE_%s" % ipns)
     if ipfs is None:
         return 'no Version.'
 
