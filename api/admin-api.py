@@ -97,7 +97,7 @@ def newVersion(ipns: str = Form(...),
         os.mkdir(apkpath)
     with open(os.path.join(apkpath, apkname), "wb") as f:
         f.write(apk.file.read())
-    apkhash = api.add(os.path.join(apkpath, apkname))
+    apkhash = api.add(os.path.join(apkpath, apkname), chunker='size-1048576', nocopy=True)
     red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
                       port=conf['redisCacheServer'][0]["port"],
                       decode_responses=True)
@@ -211,7 +211,7 @@ def upVersion(ipns: str = Form(...),
             os.mkdir(apkpath)
         with open(os.path.join(apkpath, apkname), "wb") as f:
             f.write(apk.file.read())
-        apkhash = api.add(os.path.join(apkpath, apkname))
+        apkhash = api.add(os.path.join(apkpath, apkname), chunker='size-1048576', nocopy=True)
     update = getupdatejson(ipfs)
     newupdate = {
         "title": conf['projectName'],
