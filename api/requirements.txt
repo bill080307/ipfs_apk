@@ -3,3 +3,4 @@ redis
 fastapi
 uvicorn
 python-multipart
+androguard
