@@ -17,8 +17,7 @@ def loadjson(jsonfile):
 
 
 app = FastAPI()
-conf = loadjson(os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json"))
-api = ipfshttpclient.connect(conf['ipfsApi'], timeout=3600)
+api = None
 
 uiTemplate = None
 
@@ -270,18 +269,13 @@ def upVersion(ipns: str = Form(...),
 
 if __name__ == '__main__':
     import uvicorn
-    from uvicorn import logging, loops, protocols, lifespan
-    from uvicorn.loops import auto
-    from uvicorn.protocols import http, websockets
-    from uvicorn.protocols.http import auto
-    from uvicorn.protocols.websockets import auto
-    from uvicorn.lifespan import on
 
     if len(sys.argv[1:]) < 1:
         print("can't read config file.")
         sys.exit(0)
     conf_path = (sys.argv[1])
     conf = loadjson(conf_path)
+    api = ipfshttpclient.connect(conf['ipfsApi'], timeout=3600)
     uidir = os.path.abspath(os.path.join(os.path.dirname(conf_path), "ui_html"))
     if not os.path.isdir(uidir):
         print("can't find ui html dir.")
@@ -294,12 +288,3 @@ if __name__ == '__main__':
                 host=runConf['host'],
                 port=runConf['port'],
                 workers=runConf['workers'])
-# from androguard.core.bytecodes import apk
-#
-# url = '/home/bill/下载/Android_6.0.3.6604_537064871.apk'
-#
-# if __name__ == '__main__':
-#     package, version, code = get_android_info(url)
-#     apkname = "%s_%s_%s.apk" % (package, version, code)
-#     print(apkname)
-#
