@@ -26,10 +26,10 @@
             <b-form-input id="title" v-model="item.title"></b-form-input>
           </b-form-group>
           <b-form-group label="version:" label-for="version">
-            <b-form-input id="version" v-model="item.version"></b-form-input>
+            <b-form-input id="version" v-model="item.version" disabled></b-form-input>
           </b-form-group>
           <b-form-group label="build:" label-for="build">
-            <b-form-input id="build" v-model="item.build"></b-form-input>
+            <b-form-input id="build" v-model="item.build" disabled></b-form-input>
           </b-form-group>
           <b-form-group label="update_log:" label-for="update_log">
             <b-form-textarea
