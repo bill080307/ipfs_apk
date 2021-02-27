@@ -1,11 +1,13 @@
 #!/usr/bin/python3
 import json
 import os
+import sys
 import time
 
 import ipfshttpclient
 import redis as redis
 from fastapi import FastAPI, File, UploadFile, Form
+from androguard.core.bytecodes import apk
 
 
 def loadjson(jsonfile):
@@ -15,8 +17,9 @@ def loadjson(jsonfile):
 
 
 app = FastAPI()
-conf = loadjson(os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json"))
-api = ipfshttpclient.connect(conf['ipfsApi'], timeout=3600)
+api = None
+
+uiTemplate = None
 
 
 def getupdatejson(hash):
@@ -44,6 +47,22 @@ def publish(ipns, ipfs):
     return
 
 
+def get_android_info(package_file):
+    try:
+        apkobj = apk.APK(package_file)
+    except Exception as err:
+        print(err)
+    else:
+        if apkobj.is_valid_APK():
+            package = apkobj.get_package()
+            version = apkobj.get_androidversion_name()
+            code = apkobj.get_androidversion_code()
+            print(package)
+            # labelname = apkobj.get_app_name()
+            # sdk_version = apkobj.get_target_sdk_version()
+            return package, version, code
+
+
 @app.get('/getkeys')
 def getKeys():
     keys = api.key.list()
@@ -68,10 +87,10 @@ def newKey(keyname: str):
 
 @app.get('/getupdate')
 def getUpdate(ipns: str):
-    red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
-                      port=conf['redisCacheServer'][0]["port"],
-                      decode_responses=True)
-    ipfs = red.get("IPNSCACHE_%s" % ipns)
+    try:
+        ipfs = api.files.stat("IPNSCACHE_%s" % ipns)['Hash']
+    except ipfshttpclient.exceptions.ErrorResponse:
+        ipfs = None
     if ipfs is None:
         update = {
             "title": conf['projectName'],
@@ -86,12 +105,13 @@ def getUpdate(ipns: str):
 
 @app.post('/newversion')
 def newVersion(ipns: str = Form(...),
-                     title: str = Form(...),
-                     version:str = Form(...),
-                     build:str = Form(...),
-                     log:str = Form(...),
-                     apk: UploadFile = File(...)):
-    apkname = "%s_%s_%s.apk" % (conf['projectName'].lower(), version, build)
+               title: str = Form(...),
+               log: str = Form(...),
+               apk: UploadFile = File(...)):
+    with open(os.path.join("/tmp/tmp.apk"), "wb") as f:
+        f.write(apk.file.read())
+    package, version, code = get_android_info("/tmp/tmp.apk")
+    apkname = "%s_%s_%s.apk" % (package, version, code)
     apkpath = os.path.join(conf['localStorage'], conf['storageSubPath'])
     if not os.path.isdir(apkpath):
         os.mkdir(apkpath)
@@ -101,24 +121,27 @@ def newVersion(ipns: str = Form(...),
     red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
                       port=conf['redisCacheServer'][0]["port"],
                       decode_responses=True)
-    ipfs = red.get("IPNSCACHE_%s" % ipns)
+    try:
+        ipfs = api.files.stat("IPNSCACHE_%s" % ipns)['Hash']
+    except ipfshttpclient.exceptions.ErrorResponse:
+        ipfs = None
     if ipfs is None:
         update = {
             "title": conf['projectName'],
             "data": [],
         }
-        ipfs = conf['uiTemplate']
+        ipfs = uiTemplate
     else:
         update = getupdatejson(ipfs)
     update['data'].append({
         "title": title,
         "version": version,
-        "build": build,
+        "build": code,
         "log": log,
         "apk_file": os.path.join(conf['storageSubPath'], apkname),
         "datetime": int(time.time())
     })
-    update['last'] = build
+    update['last'] = code
     updatehash = api.add_json(update)
 
     files = api.object.links(ipfs)
@@ -131,19 +154,20 @@ def newVersion(ipns: str = Form(...),
     # add apk file in hash
     dirhash = api.object.patch.add_link(dirhash['Hash'], apkname, apkhash['Hash'])
 
-    hash = conf['uiTemplate']
+    hash = uiTemplate
     hash = api.object.patch.add_link(hash, conf['storageSubPath'], dirhash['Hash'])
     hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
     publish(ipns, hash['Hash'])
+    api.files.cp('/ipfs/%s' % hash['Hash'], "/IPNSCACHE_%s" % ipns)
     return {"newhash": hash['Hash']}
 
 
 @app.get('/delversion')
 def delVersion(ipns, build):
-    red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
-                      port=conf['redisCacheServer'][0]["port"],
-                      decode_responses=True)
-    ipfs = red.get("IPNSCACHE_%s" % ipns)
+    try:
+        ipfs = api.files.stat("IPNSCACHE_%s" % ipns)['Hash']
+    except ipfshttpclient.exceptions.ErrorResponse:
+        ipfs = None
     if ipfs is None:
         return 'no Version.'
     update = getupdatejson(ipfs)
@@ -155,7 +179,7 @@ def delVersion(ipns, build):
         if not item['build'] == build:
             newupdate['data'].append(item)
         else:
-            apkname = "%s_%s_%s.apk" % (conf['projectName'].lower(), item['version'], build)
+            apkname = apk_file.split("/")[1]
 
     if update['last'] == build:
         last = 0
@@ -177,24 +201,25 @@ def delVersion(ipns, build):
     # del apk file in hash
     dirhash = api.object.patch.rm_link(dirhash['Hash'], apkname)
 
-    hash = conf['uiTemplate']
+    hash = uiTemplate
     hash = api.object.patch.add_link(hash, conf['storageSubPath'], dirhash['Hash'])
     hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
     publish(ipns, hash['Hash'])
+    api.files.rm("/IPNSCACHE_%s" % ipns, recursive=True)
+    api.files.cp('/ipfs/%s' % hash['Hash'], "/IPNSCACHE_%s" % ipns)
     return {"newhash": hash['Hash']}
 
 
 @app.post('/upversion')
 def upVersion(ipns: str = Form(...),
-                     title: str = Form(...),
-                     version:str = Form(...),
-                     build:str = Form(...),
-                     log:str = Form(...),
-                     apk: UploadFile = File(None)):
-    red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
-                      port=conf['redisCacheServer'][0]["port"],
-                      decode_responses=True)
-    ipfs = red.get("IPNSCACHE_%s" % ipns)
+              title: str = Form(...),
+              build: str = Form(...),
+              log: str = Form(...),
+              apk: UploadFile = File(None)):
+    try:
+        ipfs = api.files.stat("IPNSCACHE_%s" % ipns)['Hash']
+    except ipfshttpclient.exceptions.ErrorResponse:
+        ipfs = None
     if ipfs is None:
         return 'no Version.'
 
@@ -205,7 +230,10 @@ def upVersion(ipns: str = Form(...),
             dirhash = fl
 
     if apk:
-        apkname = "%s_%s_%s.apk" % (conf['projectName'].lower(), version, build)
+        with open(os.path.join("/tmp/tmp.apk"), "wb") as f:
+            f.write(apk.file.read())
+        package, version, code = get_android_info("/tmp/tmp.apk")
+        apkname = "%s_%s_%s.apk" % (package, version, code)
         apkpath = os.path.join(conf['localStorage'], conf['storageSubPath'])
         if not os.path.isdir(apkpath):
             os.mkdir(apkpath)
@@ -238,15 +266,31 @@ def upVersion(ipns: str = Form(...),
     newupdate['last'] = build
     updatehash = api.add_json(newupdate)
 
-    hash = conf['uiTemplate']
+    hash = uiTemplate
     hash = api.object.patch.add_link(hash, conf['storageSubPath'], dirhash['Hash'])
     hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
     publish(ipns, hash['Hash'])
+    api.files.rm("/IPNSCACHE_%s" % ipns, recursive=True)
+    api.files.cp('/ipfs/%s' % hash['Hash'], "/IPNSCACHE_%s" % ipns)
     return {"newhash": hash['Hash']}
 
 
 if __name__ == '__main__':
     import uvicorn
+
+    if len(sys.argv[1:]) < 1:
+        print("can't read config file.")
+        sys.exit(0)
+    conf_path = (sys.argv[1])
+    conf = loadjson(conf_path)
+    api = ipfshttpclient.connect(conf['ipfsApi'], timeout=3600)
+    uidir = os.path.abspath(os.path.join(os.path.dirname(conf_path), "ui_html"))
+    if not os.path.isdir(uidir):
+        print("can't find ui html dir.")
+        sys.exit(0)
+    hash = api.add(uidir)
+    uiTemplate = hash[-1]['Hash']
+
     runConf = conf['service']
     uvicorn.run(app=app,
                 host=runConf['host'],
