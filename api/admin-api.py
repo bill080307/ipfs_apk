@@ -160,6 +160,8 @@ def newVersion(ipns: str = Form(...),
     publish(ipns, hash['Hash'])
     try:
         api.files.rm("/IPNSCACHE_%s" % ipns, recursive=True)
+    except:
+        pass
     api.files.cp('/ipfs/%s' % hash['Hash'], "/IPNSCACHE_%s" % ipns)
     return {"newhash": hash['Hash']}
 
