@@ -87,10 +87,10 @@ def newKey(keyname: str):
 
 @app.get('/getupdate')
 def getUpdate(ipns: str):
-    red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
-                      port=conf['redisCacheServer'][0]["port"],
-                      decode_responses=True)
-    ipfs = red.get("IPNSCACHE_%s" % ipns)
+    try:
+        ipfs = api.files.stat("IPNSCACHE_%s" % ipns)['Hash']
+    except ipfshttpclient.exceptions.ErrorResponse:
+        ipfs = None
     if ipfs is None:
         update = {
             "title": conf['projectName'],
@@ -121,7 +121,10 @@ def newVersion(ipns: str = Form(...),
     red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
                       port=conf['redisCacheServer'][0]["port"],
                       decode_responses=True)
-    ipfs = red.get("IPNSCACHE_%s" % ipns)
+    try:
+        ipfs = api.files.stat("IPNSCACHE_%s" % ipns)['Hash']
+    except ipfshttpclient.exceptions.ErrorResponse:
+        ipfs = None
     if ipfs is None:
         update = {
             "title": conf['projectName'],
@@ -155,15 +158,16 @@ def newVersion(ipns: str = Form(...),
     hash = api.object.patch.add_link(hash, conf['storageSubPath'], dirhash['Hash'])
     hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
     publish(ipns, hash['Hash'])
+    api.files.cp('/ipfs/%s' % hash['Hash'], "/IPNSCACHE_%s" % ipns)
     return {"newhash": hash['Hash']}
 
 
 @app.get('/delversion')
 def delVersion(ipns, build):
-    red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
-                      port=conf['redisCacheServer'][0]["port"],
-                      decode_responses=True)
-    ipfs = red.get("IPNSCACHE_%s" % ipns)
+    try:
+        ipfs = api.files.stat("IPNSCACHE_%s" % ipns)['Hash']
+    except ipfshttpclient.exceptions.ErrorResponse:
+        ipfs = None
     if ipfs is None:
         return 'no Version.'
     update = getupdatejson(ipfs)
@@ -201,6 +205,8 @@ def delVersion(ipns, build):
     hash = api.object.patch.add_link(hash, conf['storageSubPath'], dirhash['Hash'])
     hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
     publish(ipns, hash['Hash'])
+    api.files.rm("/IPNSCACHE_%s" % ipns, recursive=True)
+    api.files.cp('/ipfs/%s' % hash['Hash'], "/IPNSCACHE_%s" % ipns)
     return {"newhash": hash['Hash']}
 
 
@@ -210,10 +216,10 @@ def upVersion(ipns: str = Form(...),
               build: str = Form(...),
               log: str = Form(...),
               apk: UploadFile = File(None)):
-    red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
-                      port=conf['redisCacheServer'][0]["port"],
-                      decode_responses=True)
-    ipfs = red.get("IPNSCACHE_%s" % ipns)
+    try:
+        ipfs = api.files.stat("IPNSCACHE_%s" % ipns)['Hash']
+    except ipfshttpclient.exceptions.ErrorResponse:
+        ipfs = None
     if ipfs is None:
         return 'no Version.'
 
@@ -264,6 +270,8 @@ def upVersion(ipns: str = Form(...),
     hash = api.object.patch.add_link(hash, conf['storageSubPath'], dirhash['Hash'])
     hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
     publish(ipns, hash['Hash'])
+    api.files.rm("/IPNSCACHE_%s" % ipns, recursive=True)
+    api.files.cp('/ipfs/%s' % hash['Hash'], "/IPNSCACHE_%s" % ipns)
     return {"newhash": hash['Hash']}
 
 
