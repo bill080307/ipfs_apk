@@ -88,7 +88,7 @@ def newKey(keyname: str):
 @app.get('/getupdate')
 def getUpdate(ipns: str):
     try:
-        ipfs = api.files.stat("IPNSCACHE_%s" % ipns)['Hash']
+        ipfs = api.files.stat("/IPNSCACHE_%s" % ipns)['Hash']
     except ipfshttpclient.exceptions.ErrorResponse:
         ipfs = None
     if ipfs is None:
@@ -118,11 +118,8 @@ def newVersion(ipns: str = Form(...),
     with open(os.path.join(apkpath, apkname), "wb") as f:
         f.write(apk.file.read())
     apkhash = api.add(os.path.join(apkpath, apkname), chunker='size-1048576', nocopy=True)
-    red = redis.Redis(host=conf['redisCacheServer'][0]["host"],
-                      port=conf['redisCacheServer'][0]["port"],
-                      decode_responses=True)
     try:
-        ipfs = api.files.stat("IPNSCACHE_%s" % ipns)['Hash']
+        ipfs = api.files.stat("/IPNSCACHE_%s" % ipns)['Hash']
     except ipfshttpclient.exceptions.ErrorResponse:
         ipfs = None
     if ipfs is None:
@@ -133,6 +130,9 @@ def newVersion(ipns: str = Form(...),
         ipfs = uiTemplate
     else:
         update = getupdatejson(ipfs)
+        for apkinfo in update['data']:
+            if apkinfo['build'] == code:
+                return 'build Already exists'
     update['data'].append({
         "title": title,
         "version": version,
@@ -158,6 +158,8 @@ def newVersion(ipns: str = Form(...),
     hash = api.object.patch.add_link(hash, conf['storageSubPath'], dirhash['Hash'])
     hash = api.object.patch.add_link(hash['Hash'], 'update.json', updatehash)
     publish(ipns, hash['Hash'])
+    try:
+        api.files.rm("/IPNSCACHE_%s" % ipns, recursive=True)
     api.files.cp('/ipfs/%s' % hash['Hash'], "/IPNSCACHE_%s" % ipns)
     return {"newhash": hash['Hash']}
 
@@ -165,7 +167,7 @@ def newVersion(ipns: str = Form(...),
 @app.get('/delversion')
 def delVersion(ipns, build):
     try:
-        ipfs = api.files.stat("IPNSCACHE_%s" % ipns)['Hash']
+        ipfs = api.files.stat("/IPNSCACHE_%s" % ipns)['Hash']
     except ipfshttpclient.exceptions.ErrorResponse:
         ipfs = None
     if ipfs is None:
@@ -179,7 +181,7 @@ def delVersion(ipns, build):
         if not item['build'] == build:
             newupdate['data'].append(item)
         else:
-            apkname = apk_file.split("/")[1]
+            apkname = item['apk_file'].split("/")[1]
 
     if update['last'] == build:
         last = 0
@@ -213,11 +215,12 @@ def delVersion(ipns, build):
 @app.post('/upversion')
 def upVersion(ipns: str = Form(...),
               title: str = Form(...),
+              version: str = Form(...),
               build: str = Form(...),
               log: str = Form(...),
               apk: UploadFile = File(None)):
     try:
-        ipfs = api.files.stat("IPNSCACHE_%s" % ipns)['Hash']
+        ipfs = api.files.stat("/IPNSCACHE_%s" % ipns)['Hash']
     except ipfshttpclient.exceptions.ErrorResponse:
         ipfs = None
     if ipfs is None:
