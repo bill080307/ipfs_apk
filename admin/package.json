@@ -1,6 +1,6 @@
 {
   "name": "ipfs-apk-admin",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
@@ -10,7 +10,7 @@
   "dependencies": {
     "axios": "^0.21.1",
     "bootstrap-vue": "^2.21.2",
-    "core-js": "^3.9.0",
+    "core-js": "^3.9.1",
     "qrcodejs2": "0.0.2",
     "vue": "^2.6.12"
   },
@@ -19,8 +19,8 @@
     "@vue/cli-plugin-eslint": "~4.5.11",
     "@vue/cli-service": "~4.5.11",
     "babel-eslint": "^10.0.3",
-    "eslint": "^7.20.0",
-    "eslint-plugin-vue": "^7.6.0",
+    "eslint": "^7.21.0",
+    "eslint-plugin-vue": "^7.7.0",
     "vue-template-compiler": "^2.6.12"
   },
   "eslintConfig": {

@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import json
 import os
+import shutil
 import sys
 import time
 
@@ -108,15 +109,14 @@ def newVersion(ipns: str = Form(...),
                title: str = Form(...),
                log: str = Form(...),
                apk: UploadFile = File(...)):
-    with open(os.path.join("/tmp/tmp.apk"), "wb") as f:
+    with open("/tmp/tmp.apk", "wb") as f:
         f.write(apk.file.read())
     package, version, code = get_android_info("/tmp/tmp.apk")
     apkname = "%s_%s_%s.apk" % (package, version, code)
     apkpath = os.path.join(conf['localStorage'], conf['storageSubPath'])
     if not os.path.isdir(apkpath):
         os.mkdir(apkpath)
-    with open(os.path.join(apkpath, apkname), "wb") as f:
-        f.write(apk.file.read())
+    shutil.move("/tmp/tmp.apk", os.path.join(apkpath, apkname))
     apkhash = api.add(os.path.join(apkpath, apkname), chunker='size-1048576', nocopy=True)
     try:
         ipfs = api.files.stat("/IPNSCACHE_%s" % ipns)['Hash']
@@ -235,15 +235,14 @@ def upVersion(ipns: str = Form(...),
             dirhash = fl
 
     if apk:
-        with open(os.path.join("/tmp/tmp.apk"), "wb") as f:
+        with open("/tmp/tmp.apk", "wb") as f:
             f.write(apk.file.read())
         package, version, code = get_android_info("/tmp/tmp.apk")
         apkname = "%s_%s_%s.apk" % (package, version, code)
         apkpath = os.path.join(conf['localStorage'], conf['storageSubPath'])
         if not os.path.isdir(apkpath):
             os.mkdir(apkpath)
-        with open(os.path.join(apkpath, apkname), "wb") as f:
-            f.write(apk.file.read())
+        shutil.move("/tmp/tmp.apk", os.path.join(apkpath, apkname))
         apkhash = api.add(os.path.join(apkpath, apkname), chunker='size-1048576', nocopy=True)
     update = getupdatejson(ipfs)
     newupdate = {
